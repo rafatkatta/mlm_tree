@@ -5,7 +5,7 @@ require "mlm_tree/version"
 
 Gem::Specification.new do |spec|
   spec.name          = "mlm_tree"
-  spec.version	      = "0.0.1"  #MlmTree::VERSION
+  spec.version	      = MlmTree::VERSION
   spec.authors       = ["Rafat Katta"]
   spec.email         = ["rafatkatta@gsibc.net"]
 
@@ -32,4 +32,10 @@ Gem::Specification.new do |spec|
 
   spec.add_development_dependency "bundler", "~> 1.16.a"
   spec.add_development_dependency "rake", "~> 10.0"
+ 
+  # add configuration
+  spec.add_runtime_dependency 'gem_config'
+  # add redis
+  spec.add_runtime_dependency 'sqlite3'
+
 end
