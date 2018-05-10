@@ -1,66 +1,83 @@
 require "mlm_tree/version"
 require 'gem_config'
 require "sqlite3"
+require 'active_record'
+require 'application_record'
 
 
 module MlmTree
  include GemConfig::Base
 
- with_configuration do
-    has :api_key, classes: String, default: '0a84e22741bef82d43acd349163de965'
-    has :db, classes:  String, default: 'mlm.sqlite3'
-    has :format, values: [:json, :xml], default: :json
-    has :level, classes: Integer, default: 5
-    has :line, classes: Integer, default: 10
+  with_configuration do
+    has :prod_key,  classes: String,  default: '0a84e22741bef82d43acd349163de965'
+    has :db_config, classes: Hash,  default: {adapter: "sqlite3", pool: 5, timeout: 5000, database: "db/mlm.sqlite3"} 
+    has :mlm_level, classes: Integer, default: 5
+    has :max_child, classes: Integer, default: 10 # 2 for binary tree
   end
    
- def self.member(self_id, parent_id = nil, active = 1)
+  def self.member(self_id, parent_id = 0, active = 1) 
    if @db_tree.class.nil?
    # Database for Tree not exist will be created now
+   #p "Tree will be created"
     MlmTree.install
    else
    # Database for Tree exist create a new member
-    Member.new self_id, parent_id , active
+     #p "em: 1 check parent_ID = #{parent_id} is not 0 #{!parent_id == 0} or count #{Member.tree_root.count}"
+     if parent_id == 0 || Member.tree_root.count == 0
+       #p "#{Member.tree_root}"
+       #p "em: 3 create root tree "
+       Member.create_root(self_id)
+     else
+         #p "em: 2 create member" 
+         Member.create!({self_id: self_id, parent_id: parent_id , active: active})
+     end
    end
  end
 
  def self.install
+   if self.class.const_defined?('Rails') && self.class.const_get('Rails').instance_of?(::Class)
+    MlmTree.configuration.db_config = ActiveRecord::Base.connection_config
+   end
    @db_tree = DbTree.new
  end 
 
  def self.db
-  @db = DbAdapter.new
+  @db = ModelConnection.new
   @db.database
  end
 
- class DbAdapter
+ def self.get_tree
+  Member.all 
+ end
+ 
+ class ModelConnection
     def initialize
-      db_file = MlmTree.configuration.db
-
-       if !File.exist?(db_file)
-        test_file  = File.open(db_file,"w+")
-        test_file.close
-      end
-     @db = SQLite3::Database.new db_file
+     @connection = ActiveRecord::Base.establish_connection(MlmTree.configuration.db_config)   
+     if !ActiveRecord::Base.connection.table_exists? 'members'
+       if self.class.const_defined?('Rails') && self.class.const_get('Rails').instance_of?(::Class)
+         Rails::Generators.invoke("model",["members","parent_id:integer","self_id:integer","active:boolean"])
+	 Rails::Generators::Actions.rails_command("db:migrate")
+       end
+       ActiveRecord::Schema.define do
+	 create_table :members, force: true do |t|
+             t.integer :parent_id
+             t.integer :self_id 
+             t.boolean :active, default: true
+             t.timestamps
+         end
+         add_index :members, :parent_id  	
+       end
+     end
     end
     
     def database
-      @db
+      @connection
     end
  end
 
  class DbTree
     def initialize
       @db = MlmTree.db
-      
-      @table = @db.execute <<-SQL
-           CREATE TABLE IF NOT EXISTS mlm_tree (
-             id INTEGER PRIMARY KEY AUTOINCREMENT,
-             parent_id INTEGER,
-             self_id INTEGER,
-             active Boolean DEFAULT 1
-            );
-         SQL
     end
     
     def self.delete
@@ -70,42 +87,54 @@ module MlmTree
  
  end
 
- class Member
-
-   def initialize(self_id, parent_id = nil, active = 1)
-     @db = MlmTree.db
-     @id = self_id
-     @parent = parent_id
-     @active = active
-     @db.execute "insert into mlm_tree (parent_id, self_id, active ) values ( ?, ?, ? )", [parent_id, self_id, active] 
-   end
+ class Member < ApplicationRecord    
    
+   def self.create_root(self_id)
+     Member.create!({self_id: self_id, parent_id: 0, active: true})
+   end
+
    def upline
-#     puts "#{configuration.api_key}"
-#     puts @db.class 
+     puts "#{configuration.api_key}"
+     puts @db.class 
    end
 
    def downline
    end
 
    def children
-     @db.execute "select * from mlm_tree where parent_id = ?", @id
+      Member.where(parent_id: self_id)
+   end
+
+   def active_children
+     Member.where(parent_id: self_id, active: true)
    end
 
    def parents
-     parent = @db.execute "select * from mlm_tree where self_id = ? ", parent
+     up = []
+     if parent.nil?
+      return  up
+     else
+      up << parents
+     end     
    end
 
    def parent
-     @parent
+     unless parent_id == 0
+       Member.find(parent_id)
+     else
+       nil
+     end
    end
 
-   def tree_root
+   def self.tree_root
+     Member.where(parent_id: 0) || Member.first
    end
    
    def neighbor
+     Member.where(parent_id: parent_id)
    end
  
  end
+
 
 end

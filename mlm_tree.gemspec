@@ -1,4 +1,3 @@
-
 lib = File.expand_path("../lib", __FILE__)
 $LOAD_PATH.unshift(lib) unless $LOAD_PATH.include?(lib)
 require "mlm_tree/version"
@@ -35,7 +34,11 @@ Gem::Specification.new do |spec|
  
   # add configuration
   spec.add_runtime_dependency 'gem_config'
-  # add redis
+
+  # add sqlite3
   spec.add_runtime_dependency 'sqlite3'
+
+  # add activerecord
+  spec.add_runtime_dependency 'activerecord'
 
 end
