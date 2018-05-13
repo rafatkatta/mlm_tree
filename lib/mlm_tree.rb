@@ -50,7 +50,7 @@ module MlmTree
    nodes = []
    node = Node.where(self_id: self_id).first
    
-   while node.parent_id.nil?
+   while node.parent_id > 0
      nodes << node
      node = Node.where(seld_id: node.parent_id).first
    end
@@ -74,11 +74,10 @@ module MlmTree
 
   def parents
     nodes =[]
-    parent_node = self.parent
-
-    while parent_node.nil?
-     nodes << parent_node
-     parent_node = parent_node.parent     
+    node = self
+    while node.parent_id > 0
+     nodes << node
+     node = node.parent
     end
 
     return nodes
