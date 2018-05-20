@@ -52,8 +52,8 @@ class MlmTreeTest < Minitest::Test
       @mlm_tree.add_node(1,0)
       @mlm_node = @mlm_tree.add_node(1,1)
       assert !@mlm_node.class.nil?
-      assert @mlm_node.self_id == 1
-      assert @mlm_node.parent_id == 1
+      assert_equal @mlm_node.self_id, 1
+      assert_equal @mlm_node.parent_id, 1
   end
 
   def test_private_method_build_test_tree
@@ -61,7 +61,7 @@ class MlmTreeTest < Minitest::Test
       build_test_tree
       @tree = @mlm_tree.get_tree
       assert !@tree.first.class.nil?
-      assert @tree.first.parent_id == 0
+      assert_equal @tree.first.parent_id, 0
   end
   
   def test_mlm_tree_Node_childern
@@ -78,7 +78,7 @@ class MlmTreeTest < Minitest::Test
       @mlm_first_Node =  @mlm_nodes.first
       assert @mlm_first_Node.children.count > 0	
   end  
-=begin
+
   def test_mlm_tree_Node_active_childern
       @mlm_tree.install
       build_test_tree
@@ -94,7 +94,7 @@ class MlmTreeTest < Minitest::Test
       @mlm_node = @mlm_tree.add_node(2,5,0)   
       assert !@mlm_node.parent.class.nil?
   end
-=end
+
   def test_mlm_parents_Node
       @mlm_tree.install
       @mlm_tree.add_node(5,0)
@@ -104,8 +104,69 @@ class MlmTreeTest < Minitest::Test
       @mlm_tree.add_node(10,6)
       @mlm_node = @mlm_tree.add_node(44,10)
       assert !@mlm_node.parents.class.nil?
-      assert @mlm_node.parents.count == 5
+      assert_equal @mlm_node.parents.count, 5
   end
+
+  def test_mlm_upline_Node
+      @mlm_tree.install
+      @mlm_tree.add_node(5,0)
+      @mlm_tree.add_node(8,5)
+      @mlm_tree.add_node(4,8)
+      @mlm_tree.add_node(6,4)
+      @mlm_tree.add_node(10,6)
+      @mlm_node = @mlm_tree.add_node(44,10)
+      assert_equal @mlm_node.upline.count, 5
+  end
+
+  def test_mlm_downline_Node
+      @mlm_tree.install
+      @mlm_node = @mlm_tree.add_node(5,0)
+      @mlm_tree.add_node(16,5)
+      @mlm_tree.add_node(23,16)
+      @mlm_tree.add_node(8,5)
+      @mlm_tree.add_node(4,8)
+      @mlm_tree.add_node(12,8)
+      @mlm_tree.add_node(14,8)
+      @mlm_tree.add_node(28,8)
+      @mlm_tree.add_node(6,4)
+      @mlm_tree.add_node(34,4)
+      @mlm_tree.add_node(10,6)
+      @mlm_tree.add_node(24,6)
+      @mlm_tree.add_node(54,6)
+      @mlm_tree.add_node(64,6)
+      @mlm_tree.add_node(74,6)
+      @mlm_tree.add_node(44,10)
+      assert_equal @mlm_node.downline.count, 16
+  end
+
+  def test_mlm_upline_tree
+      @mlm_tree.install
+      @mlm_tree.add_node(5,0)
+      @mlm_tree.add_node(8,5)
+      @mlm_tree.add_node(4,8)
+      @mlm_tree.add_node(6,4)
+      @mlm_tree.add_node(10,6)
+      @mlm_tree.add_node(44,10)
+      assert_equal @mlm_tree.upline(44).count, 5
+  end
+
+  def test_mlm_downline_tree
+      @mlm_tree.install
+      @mlm_node = @mlm_tree.add_node(5,0)
+      @mlm_tree.add_node(16,5)
+      @mlm_tree.add_node(23,16)
+      @mlm_tree.add_node(8,5)
+      @mlm_tree.add_node(4,8)
+      @mlm_tree.add_node(12,8)
+      @mlm_tree.add_node(14,8)
+      @mlm_tree.add_node(28,8)
+      @mlm_tree.add_node(6,4)
+      @mlm_tree.add_node(34,4)
+      @mlm_tree.add_node(10,6)
+      @mlm_tree.add_node(24,6)
+      assert_equal @mlm_tree.downline(5).count, 12
+  end
+
 
  private
   def build_test_tree

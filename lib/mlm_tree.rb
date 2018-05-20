@@ -46,13 +46,22 @@ module MlmTree
   Node.all 
  end
 
+ def self.upline(self_id)
+  parents(self_id)
+ end 
+
+ def self.downline(self_id)
+  node = Node.where(self_id: self_id).first
+  return node.downline
+ end 
+
  def self.parents(self_id) 
    nodes = []
    node = Node.where(self_id: self_id).first
    
    while node.parent_id > 0
      nodes << node
-     node = Node.where(seld_id: node.parent_id).first
+     node = Node.where(self_id: node.parent_id).first
    end
    return nodes
  end
@@ -67,13 +76,13 @@ module MlmTree
  end
 
  Node.class_eval {
-
+   
   def children
     Node.where(parent_id: self_id) 
   end
 
   def parents
-    nodes =[]
+    nodes ||= []
     node = self
     while node.parent_id > 0
      nodes << node
@@ -87,6 +96,25 @@ module MlmTree
     Node.where(self_id: self.parent_id).first
   end
 
+  def upline
+    parents
+  end
+
+  def level
+    parents.count
+  end
+
+  def downline
+    @nodes ||= []
+    @nodes << self
+
+    if self.children.count > 0
+     self.children.each do |ch|
+      @nodes << ch.downline
+     end
+    end
+    return @nodes.flatten.compact.uniq
+  end 
 
  }
 
